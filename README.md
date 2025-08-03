@@ -59,3 +59,16 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Setup Instructions
+
+1. Clone the repo  
+   `git clone https://github.com/your-username/your-repo-name.git`
+
+2. Install dependencies  
+   `composer install`
+
+3. Create `.env` file and generate key  
+4. Run with  
+`php artisan serve`
+
+5. SQLite database is used. Ensure `database/database.sqlite` exists.
