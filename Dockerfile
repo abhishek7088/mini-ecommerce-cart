@@ -1,39 +1,38 @@
-# Use official PHP image with Apache
-FROM php:8.2-apache
+# Use official PHP with Apache
+FROM php:8.1-apache
 
-# Enable mod_rewrite for Laravel routing
+# Arguments
+ARG APP_ENV=production
+
+# Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-# Install required dependencies
+# Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
-    zip unzip git curl libzip-dev libpng-dev libonig-dev \
-    && docker-php-ext-install zip pdo pdo_mysql
+    zip unzip git curl libpng-dev libonig-dev libxml2-dev libzip-dev \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+
+# Install Composer (latest version)
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy all source files
+# Copy application code
 COPY . .
 
-# Copy Composer from official image
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Clear composer cache (fixes "extracting archive" issues)
+RUN composer clear-cache
 
-# Create .env file from example
-RUN cp .env.example .env
+# Install dependencies safely
+RUN COMPOSER_MEMORY_LIMIT=-1 composer install --prefer-dist --no-interaction --no-progress
 
-# Install dependencies
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
-
-# Set document root to Laravel public directory
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
-
-# Generate Laravel app key
-RUN php artisan key:generate
-
-# Set correct permissions
+# Fix permissions
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
+    && chmod -R 775 storage bootstrap/cache
 
 # Expose port 80
 EXPOSE 80
+
+# Default Apache start command
+CMD ["apache2-foreground"]
