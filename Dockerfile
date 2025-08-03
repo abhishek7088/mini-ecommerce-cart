@@ -12,24 +12,27 @@ RUN apt-get update && apt-get install -y \
 # Set working directory in the container
 WORKDIR /var/www/html
 
-# Copy Laravel app into the container
+# Copy Laravel app
 COPY . .
 
-# Install Composer globally
+# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Install Laravel dependencies
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-# Set correct permissions
+# Generate app key
+RUN php artisan key:generate
+
+# Set permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# 🛠 Set Apache's DocumentRoot to Laravel's public directory
+# Set Apache doc root
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-
-# 🛠 Update Apache config to reflect the new DocumentRoot
 RUN sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
 
-# Expose default HTTP port
+# Suppress Apache server name warning
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
 EXPOSE 80
